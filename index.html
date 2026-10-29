@@ -1,0 +1,373 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DriveEase | Car Rental</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/script.js" defer></script>
+
+  <style>
+    /* Consistent car image size */
+    .car-card > img {
+      display: block;
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      object-position: center;
+      background: #eef1e8;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .booking-status-section {
+      max-width: 850px;
+      margin: 40px auto;
+      padding: 35px 20px;
+      text-align: center;
+      background: #f4f6ef;
+      border-radius: 16px;
+    }
+
+    .booking-status-section input {
+      box-sizing: border-box;
+      max-width: 100%;
+      padding: 12px;
+      margin: 8px;
+      border: 1px solid #ccd5cb;
+      border-radius: 7px;
+      font: inherit;
+    }
+
+    #bookingStatusResult {
+      overflow-wrap: anywhere;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="navbar">
+    <a class="logo" href="/">Drive<span>Ease.</span></a>
+    <nav>
+      <a href="#home">Home</a>
+      <a href="#cars">Our Cars</a>
+      <a href="#why-us">Why DriveEase</a>
+      <a href="/admin">Admin</a>
+    </nav>
+    <a class="nav-button" href="#cars">Rent a Car</a>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero" id="home">
+      <div class="hero-content">
+        <span class="eyebrow">YOUR JOURNEY, YOUR RULES</span>
+        <h1>Find the car.<br>Feel the <span>freedom.</span></h1>
+        <p>
+          Comfortable rides, transparent prices and the freedom to
+          explore India on your own terms.
+        </p>
+        <a href="#cars" class="primary-button">Explore Cars ↗</a>
+
+        <div class="hero-stats">
+          <div><strong>4+</strong><small>Car options</small></div>
+          <div><strong>Easy</strong><small>Online booking</small></div>
+          <div><strong>₹</strong><small>Clear pricing</small></div>
+        </div>
+      </div>
+
+      <div class="hero-image">
+        <img
+          src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=85"
+          alt="Premium sports car on a scenic road"
+          loading="eager">
+
+        <div class="image-label">
+          <span>✦ Ready for your next trip?</span>
+          <strong>Make every mile count.</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search cars -->
+    <section class="search-panel">
+      <div>
+        <label for="searchCar">Find your ride</label>
+        <select id="searchCar">
+          <option value="all">All car types</option>
+          <option value="SUV">SUV</option>
+          <option value="Sedan">Sedan</option>
+          <option value="Hatchback">Hatchback</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="searchText">Search car name</label>
+        <input id="searchText" type="text" placeholder="e.g. Swift">
+      </div>
+
+      <button class="primary-button" id="searchButton" type="button">
+        Search Cars
+      </button>
+    </section>
+
+    <!-- Car collection -->
+    <section class="cars-section" id="cars">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">THE DRIVE COLLECTION</span>
+          <h2>Find your perfect ride.</h2>
+        </div>
+        <p>Choose a car that fits your journey and your budget.</p>
+      </div>
+
+      <div class="car-grid" id="carGrid">
+
+        <!-- Hyundai Creta -->
+        <article class="car-card"
+          data-type="SUV" data-name="Hyundai Creta">
+
+          <img
+  src="https://strapi-file-uploads.parkplus.io/Hyundai_Creta_Comfort_1_4a78667979.webp"
+  alt="Hyundai Creta SUV"
+  loading="lazy">
+
+          <div class="car-info">
+            <span class="car-type">SUV</span>
+            <h3>Hyundai Creta</h3>
+            <p>Comfortable • Spacious • Automatic option</p>
+
+            <div class="car-bottom">
+              <div>
+                <strong>₹1,500</strong>
+                <small> / day</small>
+              </div>
+              <button class="book-button"
+                data-car="Hyundai Creta" type="button">
+                Book Now ↗
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Maruti Swift -->
+        <article class="car-card"
+          data-type="Hatchback" data-name="Maruti Swift">
+
+          <img
+  src="https://images.carandbike.com/cms/articles/2024/5/3213075/53707168838_7d96b568a7_o_b5b9aba92b.jpg"
+  alt="Maruti Swift hatchback"
+  loading="lazy">
+
+          <div class="car-info">
+            <span class="car-type">HATCHBACK</span>
+            <h3>Maruti Swift</h3>
+            <p>City-friendly • Compact • Fuel efficient</p>
+
+            <div class="car-bottom">
+              <div>
+                <strong>₹1,500</strong>
+                <small> / day</small>
+              </div>
+              <button class="book-button"
+                data-car="Maruti Swift" type="button">
+                Book Now ↗
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Honda City -->
+        <article class="car-card"
+          data-type="Sedan" data-name="Honda City">
+
+          <img
+            src="https://static-cdn.cars24.com/prod/new-car-cms/Honda/City/2024/05/10/9deef631-6612-4cea-ac72-c8262e03b543-HONDA-CITY.png"
+            alt="Honda City sedan"
+            loading="lazy">
+
+          <div class="car-info">
+            <span class="car-type">SEDAN</span>
+            <h3>Honda City</h3>
+            <p>Elegant • Smooth ride • Extra comfort</p>
+
+            <div class="car-bottom">
+              <div>
+                <strong>₹2,200</strong>
+                <small> / day</small>
+              </div>
+              <button class="book-button"
+                data-car="Honda City" type="button">
+                Book Now ↗
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Mahindra Thar -->
+        <article class="car-card"
+          data-type="SUV" data-name="Mahindra Thar">
+
+          <img
+            src="https://cdn-s3.autocarindia.com/legacy/cdni/ExtraImages/20251007042801_Mahindra_Thar_Front_Quarter_Static_2.jpg"
+            alt="Mahindra Thar adventure SUV"
+            loading="lazy">
+
+          <div class="car-info">
+            <span class="car-type">ADVENTURE SUV</span>
+            <h3>Mahindra Thar</h3>
+            <p>Bold • Adventure-ready • Weekend escape</p>
+
+            <div class="car-bottom">
+              <div>
+                <strong>₹3,500</strong>
+                <small> / day</small>
+              </div>
+              <button class="book-button"
+                data-car="Mahindra Thar" type="button">
+                Book Now ↗
+              </button>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <p id="noCars" class="notice" hidden>
+        No cars match your search.
+      </p>
+    </section>
+
+    <!-- Why DriveEase -->
+    <section class="why-section" id="why-us">
+      <span class="eyebrow">THE DRIVE EASE DIFFERENCE</span>
+      <h2>Good journeys start here.</h2>
+
+      <div class="benefits">
+        <article>
+          <span>01</span>
+          <h3>Clear pricing</h3>
+          <p>Rental prices are displayed upfront.</p>
+        </article>
+
+        <article>
+          <span>02</span>
+          <h3>Simple booking</h3>
+          <p>Submit your details through one easy form.</p>
+        </article>
+
+        <article>
+          <span>03</span>
+          <h3>Reliable records</h3>
+          <p>Bookings are stored in the SQL database.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Booking form -->
+    <section class="booking-section" id="bookingSection" hidden>
+      <div class="booking-card">
+        <span class="eyebrow">RESERVE YOUR RIDE</span>
+        <h2>Complete your booking.</h2>
+        <p id="selectedCarText">Selected car</p>
+
+        <form id="bookingForm">
+          <input type="hidden" id="carName" name="carName">
+
+          <label for="customerName">Full Name</label>
+          <input
+            id="customerName"
+            name="customerName"
+            required
+            minlength="2"
+            maxlength="100"
+            placeholder="Enter your full name">
+
+          <label for="customerPhone">Mobile Number</label>
+          <input
+            id="customerPhone"
+            name="customerPhone"
+            type="tel"
+            inputmode="numeric"
+            pattern="[0-9]{10}"
+            maxlength="10"
+            required
+            placeholder="10-digit mobile number">
+
+          <div class="date-grid">
+            <div>
+              <label for="pickupDate">Pickup Date</label>
+              <input
+                id="pickupDate"
+                name="pickupDate"
+                type="date"
+                required>
+            </div>
+
+            <div>
+              <label for="returnDate">Return Date</label>
+              <input
+                id="returnDate"
+                name="returnDate"
+                type="date"
+                required>
+            </div>
+          </div>
+
+          <button id="submitBooking"
+            class="primary-button full-button" type="submit">
+            Confirm Booking
+          </button>
+
+          <p id="bookingMessage" class="notice"
+            role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- Booking status -->
+    <section class="booking-status-section">
+      <span class="eyebrow">BOOKING UPDATES</span>
+      <h2>Check Your Booking Status</h2>
+      <p>Enter your Booking ID and registered mobile number.</p>
+
+      <div>
+        <label for="statusBookingId">Booking ID</label><br>
+        <input
+          type="number"
+          id="statusBookingId"
+          placeholder="Enter Booking ID"
+          min="1">
+      </div>
+
+      <div>
+        <label for="statusPhone">Registered Mobile Number</label><br>
+        <input
+          type="tel"
+          id="statusPhone"
+          placeholder="10-digit mobile number"
+          maxlength="10"
+          inputmode="numeric"
+          autocomplete="tel">
+      </div>
+
+      <button
+        type="button"
+        id="checkBookingStatus"
+        class="primary-button">
+        Check Status
+      </button>
+
+      <p id="bookingStatusResult" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer>
+    <a class="logo" href="/">Drive<span>Ease.</span></a>
+    <p>Every journey deserves an easier start.</p>
+    <small>© 2026 DriveEase. BCA project demonstration.</small>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DriveEase | Bookings Admin</title>
+  <link rel="stylesheet" href="/style.css">
+
+  <style>
+    .admin-wrap {
+      max-width: 1250px;
+      margin: 45px auto;
+      padding: 0 20px;
+    }
+
+    .admin-nav {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .logout-form {
+      margin: 0;
+    }
+
+    .logout-btn {
+      padding: 10px 16px;
+      background: #b42318;
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .logout-btn:hover {
+      background: #8f1c13;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 25px;
+      background: white;
+      border: 1px solid #e3e8de;
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1000px;
+    }
+
+    th, td {
+      padding: 13px;
+      text-align: left;
+      border-bottom: 1px solid #e3e8de;
+    }
+
+    th {
+      background: #164b38;
+      color: white;
+      font-size: 13px;
+    }
+
+    td {
+      font-size: 13px;
+    }
+
+    .admin-message {
+      margin-top: 20px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .pending {
+      background: #fff0c2;
+      color: #805900;
+    }
+
+    .approved {
+      background: #d9f5e5;
+      color: #176c3a;
+    }
+
+    .rejected {
+      background: #fde2e2;
+      color: #b42318;
+    }
+
+    .action-btn {
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: white;
+      cursor: pointer;
+      margin: 2px;
+    }
+
+    .approve-btn {
+      background: #176c3a;
+    }
+
+    .reject-btn {
+      background: #b42318;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 600px) {
+      .admin-nav {
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .admin-wrap {
+        margin-top: 25px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="navbar">
+    <a class="logo" href="/">Drive<span>Ease.</span></a>
+
+    <nav class="admin-nav">
+      <a href="/">Back to Website</a>
+
+      <form
+        class="logout-form"
+        action="/admin-logout"
+        method="POST"
+        onsubmit="return confirm('Are you sure you want to logout?');"
+      >
+        <button class="logout-btn" type="submit">
+          Logout
+        </button>
+      </form>
+    </nav>
+  </header>
+
+  <main class="admin-wrap">
+    <span class="eyebrow">DATABASE MANAGEMENT</span>
+    <h1>Customer Bookings</h1>
+    <p>Manage bookings stored in the DriveEase SQLite database.</p>
+
+    <button
+      class="primary-button"
+      id="refreshBookings"
+      type="button"
+      style="margin-top:20px"
+    >
+      Refresh Bookings
+    </button>
+
+    <p id="adminMessage" class="admin-message" role="status"></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Car</th>
+            <th>Pickup</th>
+            <th>Return</th>
+            <th>Created</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody id="bookingRows">
+          <tr>
+            <td colspan="9">Loading bookings...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const rows = document.getElementById("bookingRows");
+    const message = document.getElementById("adminMessage");
+    const refreshButton = document.getElementById("refreshBookings");
+
+    async function loadBookings() {
+      refreshButton.disabled = true;
+      message.textContent = "Loading bookings...";
+
+      try {
+        const response = await fetch("/api/bookings");
+        const data = await response.json();
+
+        if (response.status === 401) {
+          window.location.href = "/admin-login";
+          return;
+        }
+
+        if (!response.ok || !Array.isArray(data)) {
+          throw new Error(data.error || "Unable to load bookings.");
+        }
+
+        rows.replaceChildren();
+
+        if (data.length === 0) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 9;
+          td.textContent = "No bookings found yet.";
+          tr.appendChild(td);
+          rows.appendChild(tr);
+        } else {
+          data.forEach((booking) => {
+            const tr = document.createElement("tr");
+
+            [
+              booking.id,
+              booking.customer_name,
+              booking.phone,
+              booking.car_name,
+              booking.pickup_date,
+              booking.return_date,
+              booking.created_at
+            ].forEach((value) => {
+              const td = document.createElement("td");
+              td.textContent = value ?? "";
+              tr.appendChild(td);
+            });
+
+            const statusCell = document.createElement("td");
+            const status = document.createElement("span");
+            const currentStatus = booking.status || "Pending";
+
+            status.className =
+              "status " + currentStatus.toLowerCase();
+            status.textContent = currentStatus;
+
+            statusCell.appendChild(status);
+            tr.appendChild(statusCell);
+
+            const actionCell = document.createElement("td");
+
+            if (currentStatus === "Pending") {
+              const approve = document.createElement("button");
+              approve.textContent = "Approve";
+              approve.className = "action-btn approve-btn";
+              approve.type = "button";
+              approve.addEventListener("click", () =>
+                updateStatus(booking.id, "Approved")
+              );
+
+              const reject = document.createElement("button");
+              reject.textContent = "Reject";
+              reject.className = "action-btn reject-btn";
+              reject.type = "button";
+              reject.addEventListener("click", () =>
+                updateStatus(booking.id, "Rejected")
+              );
+
+              actionCell.append(approve, reject);
+            } else {
+              actionCell.textContent = "No action";
+            }
+
+            tr.appendChild(actionCell);
+            rows.appendChild(tr);
+          });
+        }
+
+        message.textContent = `Total bookings: ${data.length}`;
+
+      } catch (error) {
+        message.textContent = "Error: " + error.message;
+      } finally {
+        refreshButton.disabled = false;
+      }
+    }
+
+    async function updateStatus(bookingId, status) {
+      const action = status === "Approved" ? "approve" : "reject";
+
+      if (!confirm(
+        `Are you sure you want to ${action} booking #${bookingId}?`
+      )) {
+        return;
+      }
+
+      message.textContent = `Updating booking #${bookingId}...`;
+
+      try {
+        const response = await fetch(
+          `/api/bookings/${bookingId}/status`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status })
+          }
+        );
+
+        const result = await response.json();
+
+        if (response.status === 401) {
+          window.location.href = "/admin-login";
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            result.error || "Could not update booking."
+          );
+        }
+
+        message.textContent = result.message;
+        await loadBookings();
+
+      } catch (error) {
+        message.textContent = "Error: " + error.message;
+      }
+    }
+
+    refreshButton.addEventListener("click", loadBookings);
+    loadBookings();
+  </script>
+</body>
+</html>
