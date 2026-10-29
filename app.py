@@ -17,8 +17,9 @@ app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "driveease.db"
 
-# For a real deployment, set these environment variables.
+# For deployment, set these environment variables.
 app.secret_key = os.environ.get("DRIVEEASE_SECRET_KEY") or secrets.token_hex(32)
+
 ADMIN_PASSWORD = os.environ.get(
     "DRIVEEASE_ADMIN_PASSWORD", "DriveEase@123"
 )
@@ -52,6 +53,7 @@ def init_db():
         columns = conn.execute(
             "PRAGMA table_info(bookings)"
         ).fetchall()
+
         column_names = [column["name"] for column in columns]
 
         if "status" not in column_names:
@@ -59,6 +61,11 @@ def init_db():
                 ALTER TABLE bookings
                 ADD COLUMN status TEXT NOT NULL DEFAULT 'Pending'
             """)
+
+
+# IMPORTANT: Initialize the database when the app starts,
+# including when it starts through Gunicorn on Render.
+init_db()
 
 
 @app.route("/")
@@ -80,6 +87,7 @@ def javascript():
 def admin():
     if not session.get("is_admin"):
         return redirect(url_for("admin_login"))
+
     return send_from_directory(BASE_DIR, "admin.html")
 
 
@@ -93,7 +101,9 @@ def admin_login():
             session["is_admin"] = True
             return redirect(url_for("admin"))
 
-        return render_template_string(LOGIN_PAGE, error="Incorrect password.")
+        return render_template_string(
+            LOGIN_PAGE, error="Incorrect password."
+        )
 
     if session.get("is_admin"):
         return redirect(url_for("admin"))
@@ -107,13 +117,14 @@ def admin_logout():
     return redirect(url_for("admin_login"))
 
 
-# Only these known public website files can be served.
-# Do not expose app.py, the SQLite database, or admin.html directly.
+# Only serve approved public website files.
 @app.route("/<path:filename>")
 def static_files(filename):
     public_files = {"index.html", "style.css", "script.js"}
+
     if filename in public_files:
         return send_from_directory(BASE_DIR, filename)
+
     return "Not found", 404
 
 
@@ -132,7 +143,9 @@ def create_booking():
     data = request.get_json(silent=True)
 
     if not isinstance(data, dict):
-        return jsonify({"error": "Invalid request. Please try again."}), 400
+        return jsonify({
+            "error": "Invalid request. Please try again."
+        }), 400
 
     name = str(data.get("customerName", "")).strip()
     phone = str(data.get("customerPhone", "")).strip()
@@ -141,38 +154,61 @@ def create_booking():
     returning = str(data.get("returnDate", "")).strip()
 
     if not all([name, phone, car, pickup, returning]):
-        return jsonify({"error": "Please fill in all fields."}), 400
+        return jsonify({
+            "error": "Please fill in all fields."
+        }), 400
 
     if len(name) < 2 or len(name) > 100:
-        return jsonify({"error": "Enter a valid full name."}), 400
+        return jsonify({
+            "error": "Enter a valid full name."
+        }), 400
 
     if not re.fullmatch(r"[0-9]{10}", phone):
-        return jsonify({"error": "Enter a valid 10-digit mobile number."}), 400
+        return jsonify({
+            "error": "Enter a valid 10-digit mobile number."
+        }), 400
 
     allowed_cars = {
-        "Hyundai Creta", "Maruti Swift", "Honda City", "Mahindra Thar"
+        "Hyundai Creta",
+        "Maruti Swift",
+        "Honda City",
+        "Mahindra Thar"
     }
+
     if car not in allowed_cars:
-        return jsonify({"error": "Please select a valid car."}), 400
+        return jsonify({
+            "error": "Please select a valid car."
+        }), 400
 
     try:
         pickup_day = date.fromisoformat(pickup)
         return_day = date.fromisoformat(returning)
     except ValueError:
-        return jsonify({"error": "Select valid pickup and return dates."}), 400
+        return jsonify({
+            "error": "Select valid pickup and return dates."
+        }), 400
 
     if pickup_day < date.today():
-        return jsonify({"error": "Pickup date cannot be in the past."}), 400
+        return jsonify({
+            "error": "Pickup date cannot be in the past."
+        }), 400
 
     if return_day < pickup_day:
-        return jsonify({"error": "Return date cannot be before pickup."}), 400
+        return jsonify({
+            "error": "Return date cannot be before pickup."
+        }), 400
 
     try:
         with get_db() as conn:
             cursor = conn.execute("""
-                INSERT INTO bookings
-                    (customer_name, phone, car_name, pickup_date,
-                     return_date, status)
+                INSERT INTO bookings (
+                    customer_name,
+                    phone,
+                    car_name,
+                    pickup_date,
+                    return_date,
+                    status
+                )
                 VALUES (?, ?, ?, ?, ?, 'Pending')
             """, (name, phone, car, pickup, returning))
 
@@ -190,19 +226,22 @@ def create_booking():
         }), 500
 
 
-# Customer status lookup: both booking ID and registered phone are required.
-# This endpoint returns only that booking's limited status information.
+# Customers must provide both booking ID and registered phone.
 @app.route("/api/booking-status", methods=["POST"])
 def check_booking_status():
     data = request.get_json(silent=True)
 
     if not isinstance(data, dict):
-        return jsonify({"error": "Enter your Booking ID and mobile number."}), 400
+        return jsonify({
+            "error": "Enter your Booking ID and mobile number."
+        }), 400
 
     try:
         booking_id = int(data.get("bookingId", 0))
     except (ValueError, TypeError):
-        return jsonify({"error": "Enter a valid Booking ID."}), 400
+        return jsonify({
+            "error": "Enter a valid Booking ID."
+        }), 400
 
     phone = str(data.get("phone", "")).strip()
 
@@ -219,10 +258,12 @@ def check_booking_status():
                 WHERE id = ? AND phone = ?
             """, (booking_id, phone)).fetchone()
 
-        # Same response for a missing ID or mismatched phone.
         if booking is None:
             return jsonify({
-                "error": "Booking not found. Check your ID and registered mobile number."
+                "error": (
+                    "Booking not found. Check your ID and "
+                    "registered mobile number."
+                )
             }), 404
 
         return jsonify({
@@ -234,15 +275,21 @@ def check_booking_status():
         })
 
     except sqlite3.Error:
-        app.logger.exception("Database error while checking booking status")
-        return jsonify({"error": "Could not check booking status."}), 500
+        app.logger.exception(
+            "Database error while checking booking status"
+        )
+        return jsonify({
+            "error": "Could not check booking status."
+        }), 500
 
 
-# Only a logged-in admin can see the full bookings list.
+# Only a logged-in admin can see all bookings.
 @app.route("/api/bookings", methods=["GET"])
 def list_bookings():
     if not session.get("is_admin"):
-        return jsonify({"error": "Admin login required."}), 401
+        return jsonify({
+            "error": "Admin login required."
+        }), 401
 
     try:
         with get_db() as conn:
@@ -257,14 +304,18 @@ def list_bookings():
 
     except sqlite3.Error:
         app.logger.exception("Database error while reading bookings")
-        return jsonify({"error": "Could not load bookings."}), 500
+        return jsonify({
+            "error": "Could not load bookings."
+        }), 500
 
 
-# Only a logged-in admin can approve or reject a booking.
+# Only the logged-in admin can approve or reject bookings.
 @app.route("/api/bookings/<int:booking_id>/status", methods=["PATCH"])
 def update_booking_status(booking_id):
     if not session.get("is_admin"):
-        return jsonify({"error": "Admin login required."}), 401
+        return jsonify({
+            "error": "Admin login required."
+        }), 401
 
     data = request.get_json(silent=True) or {}
     status = data.get("status")
@@ -283,7 +334,9 @@ def update_booking_status(booking_id):
             """, (status, booking_id))
 
             if cursor.rowcount == 0:
-                return jsonify({"error": "Booking not found."}), 404
+                return jsonify({
+                    "error": "Booking not found."
+                }), 404
 
         return jsonify({
             "message": f"Booking {status.lower()} successfully!",
@@ -292,8 +345,12 @@ def update_booking_status(booking_id):
         })
 
     except sqlite3.Error:
-        app.logger.exception("Database error while updating booking status")
-        return jsonify({"error": "Could not update booking status."}), 500
+        app.logger.exception(
+            "Database error while updating booking status"
+        )
+        return jsonify({
+            "error": "Could not update booking status."
+        }), 500
 
 
 LOGIN_PAGE = """
@@ -305,22 +362,37 @@ LOGIN_PAGE = """
   <title>DriveEase | Admin Login</title>
   <style>
     body {
-      margin: 0; min-height: 100vh; display: grid; place-items: center;
-      font-family: Arial, sans-serif; background: #f4f6ef; color: #173d2e;
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: Arial, sans-serif;
+      background: #f4f6ef;
+      color: #173d2e;
     }
     .login-card {
-      width: min(360px, calc(100% - 48px)); padding: 28px;
-      border-radius: 14px; background: white; box-shadow: 0 8px 30px #0001;
+      width: min(360px, calc(100% - 48px));
+      padding: 28px;
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 8px 30px #0001;
     }
     h1 { margin-top: 0; }
     input, button {
-      box-sizing: border-box; width: 100%; padding: 12px; margin-top: 12px;
-      border-radius: 7px; font-size: 15px;
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 7px;
+      font-size: 15px;
     }
     input { border: 1px solid #ccd5cb; }
     button {
-      border: 0; background: #164b38; color: white;
-      cursor: pointer; font-weight: bold;
+      border: 0;
+      background: #164b38;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
     }
     .error { color: #b42318; }
   </style>
@@ -344,5 +416,4 @@ LOGIN_PAGE = """
 
 
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
